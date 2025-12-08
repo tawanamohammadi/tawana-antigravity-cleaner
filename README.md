@@ -4,35 +4,16 @@ A Windows PowerShell command‑line tool to **fully uninstall Google Antigravity
 
 > **Maintained by TawanaNetworkLtc**
 
-<p align="center">
-  <!-- Replace with your latest screenshot if needed -->
-  <img width="703" height="481" alt="Antigravity Cleaner CLI screenshot" src="https://github.com/user-attachments/assets/a1aca41e-7e8b-4ad0-972b-f0564d2f11d4" />
-</p>
-
 ---
 
-## Why this exists
+## What this tool does
 
-Antigravity IDE sometimes leaves behind user‑level caches, temp installers, and registry entries. These leftovers can cause:
-
-* Repeated Google/Gmail login errors
-* Broken updates or corrupted profiles
-* Conflicting reinstalls
-* Random crashes / missing extensions
-
-This cleaner gives you a reliable **one‑command reset** before reinstalling.
-
----
-
-## Features
-
-* ✅ Detects uninstall entries (per‑user + system)
-* ✅ Runs the vendor uninstaller when available
-* ✅ Deletes leftover folders in **AppData / Programs / Temp**
-* ✅ Optional **Deep Clean** for extra traces
-* ✅ Optional **Network Reset** for stubborn login/network issues
-* ✅ Safe **Dry Run** mode first
-* ✅ Creates a timestamped log on Desktop
+* Detects Antigravity uninstall entries (per‑user + system)
+* Runs the vendor uninstaller when available
+* Deletes leftover folders in AppData/Programs/Temp
+* Optional **Deep Clean** to remove extra related caches
+* Optional **Network Reset** (useful if login/network errors persist)
+* Creates a timestamped log file on your Desktop
 
 ---
 
@@ -41,8 +22,6 @@ This cleaner gives you a reliable **one‑command reset** before reinstalling.
 * Windows 10 / Windows 11
 * PowerShell 5.1+ (built‑in) or PowerShell 7+ (recommended)
 * **Run as Administrator** for best results
-
-> Tip: The script resolves user folders dynamically, so it works even if your profile isn’t on `C:`.
 
 ---
 
@@ -64,6 +43,20 @@ CLI‑only users just need:
 
 ## Quick start
 
+### Option A — One‑liner (download & run latest)
+
+No manual download needed. This runs the latest core script directly from GitHub:
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/tawanamohammadi/tawana-antigravity-cleaner/main/Antigravity-Cleaner.ps1 | iex
+```
+
+After that, run any command (examples below), or just follow on‑screen prompts if your core script shows a menu.
+
+---
+
+### Option B — Download ZIP / clone
+
 1. Download or clone this repo.
 2. Put `Antigravity-Cleaner.ps1` somewhere like `C:\tools\`.
 3. Open PowerShell **as Administrator**.
@@ -71,7 +64,7 @@ CLI‑only users just need:
 
 ---
 
-## How to run
+## How to run (local)
 
 ### Step 1 — Open Admin PowerShell
 
@@ -105,7 +98,7 @@ powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -ScanQuick
 
 ### 2) Scan (Deep)
 
-Quick scan + extra traces (related caches, extension icons, temp artifacts).
+Quick scan + extra traces (related caches, extension icons, etc.).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -ScanDeep
@@ -121,7 +114,7 @@ powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -CleanOnly
 
 ### 4) Deep Clean (Recommended)
 
-Full clean + deep cache/traces cleanup.
+Full clean + extra caches/traces.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -AutoDeepClean
@@ -137,8 +130,7 @@ powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -DryRunOnly
 
 ### 6) Network Reset
 
-Runs Windows network reset commands.
-**Restart recommended afterwards.**
+Runs Windows network reset commands. **Restart recommended afterwards.**
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -NetResetOnly
@@ -168,15 +160,15 @@ If you want a different path, edit the `$LogFile` value in the core script.
 
 ---
 
-## Recommended clean‑reinstall workflow
+## Typical workflow (clean reinstall)
 
-1. **Dry Run** (preview targets):
+1. Run Dry Run (optional, safe preview):
 
 ```powershell
 .\Antigravity-Cleaner.ps1 -DryRunOnly
 ```
 
-2. **Deep Clean**:
+2. Run Deep Clean:
 
 ```powershell
 .\Antigravity-Cleaner.ps1 -AutoDeepClean
@@ -186,7 +178,7 @@ If you want a different path, edit the `$LogFile` value in the core script.
 
 4. Reinstall Antigravity IDE normally.
 
-5. If Gmail/login errors persist:
+5. If login is still broken, run Network Reset:
 
 ```powershell
 .\Antigravity-Cleaner.ps1 -NetResetOnly
@@ -198,17 +190,19 @@ Restart again.
 
 ## Troubleshooting
 
-### 1) ExecutionPolicy / script blocked
+### 1) “ExecutionPolicy” / script blocked
 
-Run once per session:
+Run:
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
 ```
 
-### 2) No uninstall entries found
+Then retry.
 
-Registry uninstall key is already gone. The script will still remove leftovers.
+### 2) “No uninstall entries found”
+
+This usually means Antigravity is already removed from registry. The script will still cleanup leftovers.
 
 ### 3) Login still fails after clean
 
@@ -220,7 +214,7 @@ Run network reset:
 
 Restart afterward.
 
-### 4) Confirming a fully clean state
+### 4) I want to confirm nothing is left
 
 Run deep scan:
 
@@ -228,16 +222,15 @@ Run deep scan:
 .\Antigravity-Cleaner.ps1 -ScanDeep
 ```
 
-If it reports `none`, your system is clean.
+If it reports `none`, you are clean.
 
 ---
 
 ## Safety notes
 
 * The script only targets folders/keys that clearly match **Antigravity** patterns.
-* **Dry Run** is the safest first step.
+* Dry Run is provided for verification.
 * Run as Admin for full coverage.
-* Unrelated Chrome/Google data is not removed.
 
 ---
 
@@ -248,19 +241,19 @@ PRs and improvements are welcome.
 * Keep changes Windows‑safe
 * Avoid deleting unrelated Google/Chrome data
 * Add new leftover paths only when verified
-* Keep CLI flags backward compatible when possible
 
 ---
 
 ## License
 
-MIT is recommended. Add your license text as `LICENSE`.
+Choose your license (MIT recommended) and add a `LICENSE` file.
 
 ---
 
 ## Author
 
 **TawanaNetworkLtc**
+
 Ethical AI & Data Transparency Research Hub
 
 ---

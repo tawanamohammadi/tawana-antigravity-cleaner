@@ -4,16 +4,35 @@ A Windows PowerShell command‑line tool to **fully uninstall Google Antigravity
 
 > **Maintained by TawanaNetworkLtc**
 
+<p align="center">
+  <!-- Replace with your latest screenshot if needed -->
+  <img width="703" height="481" alt="Antigravity Cleaner CLI screenshot" src="https://github.com/user-attachments/assets/a1aca41e-7e8b-4ad0-972b-f0564d2f11d4" />
+</p>
+
 ---
 
-## What this tool does
+## Why this exists
 
-* Detects Antigravity uninstall entries (per‑user + system)
-* Runs the vendor uninstaller when available
-* Deletes leftover folders in AppData/Programs/Temp
-* Optional **Deep Clean** to remove extra related caches
-* Optional **Network Reset** (useful if login/network errors persist)
-* Creates a timestamped log file on your Desktop
+Antigravity IDE sometimes leaves behind user‑level caches, temp installers, and registry entries. These leftovers can cause:
+
+* Repeated Google/Gmail login errors
+* Broken updates or corrupted profiles
+* Conflicting reinstalls
+* Random crashes / missing extensions
+
+This cleaner gives you a reliable **one‑command reset** before reinstalling.
+
+---
+
+## Features
+
+* ✅ Detects uninstall entries (per‑user + system)
+* ✅ Runs the vendor uninstaller when available
+* ✅ Deletes leftover folders in **AppData / Programs / Temp**
+* ✅ Optional **Deep Clean** for extra traces
+* ✅ Optional **Network Reset** for stubborn login/network issues
+* ✅ Safe **Dry Run** mode first
+* ✅ Creates a timestamped log on Desktop
 
 ---
 
@@ -23,19 +42,21 @@ A Windows PowerShell command‑line tool to **fully uninstall Google Antigravity
 * PowerShell 5.1+ (built‑in) or PowerShell 7+ (recommended)
 * **Run as Administrator** for best results
 
+> Tip: The script resolves user folders dynamically, so it works even if your profile isn’t on `C:`.
+
 ---
 
 ## Files in this repo
 
-```
+```text
 /antigravity-cleaner
-  Antigravity-Cleaner.ps1   # Core CLI cleaner (run this)
-  Antigravity-Cleaner-GUI.ps1 (optional) # GUI wrapper if you ever add it back
+  Antigravity-Cleaner.ps1        # Core CLI cleaner (run this)
+  Antigravity-Cleaner-GUI.ps1    # Optional GUI wrapper (future)
   README.md
   LICENSE
 ```
 
-If you only want CLI, you just need:
+CLI‑only users just need:
 
 * `Antigravity-Cleaner.ps1`
 
@@ -54,7 +75,7 @@ If you only want CLI, you just need:
 
 ### Step 1 — Open Admin PowerShell
 
-* Start Menu → search **PowerShell** → **Run as Administrator**
+Start Menu → search **PowerShell** → **Run as Administrator**
 
 ### Step 2 — Go to the folder
 
@@ -67,8 +88,6 @@ cd C:\tools
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
 ```
-
-### Step 4 — Run commands
 
 ---
 
@@ -86,7 +105,7 @@ powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -ScanQuick
 
 ### 2) Scan (Deep)
 
-Quick scan + extra traces (related caches, extension icons, etc.).
+Quick scan + extra traces (related caches, extension icons, temp artifacts).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -ScanDeep
@@ -102,7 +121,7 @@ powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -CleanOnly
 
 ### 4) Deep Clean (Recommended)
 
-Full clean + extra caches/traces.
+Full clean + deep cache/traces cleanup.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -AutoDeepClean
@@ -118,7 +137,8 @@ powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -DryRunOnly
 
 ### 6) Network Reset
 
-Runs Windows network reset commands. **Restart recommended afterwards.**
+Runs Windows network reset commands.
+**Restart recommended afterwards.**
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -NetResetOnly
@@ -140,7 +160,7 @@ powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -NetResetOnly
 * The tool prints progress to the console.
 * A log file is created on your Desktop:
 
-```
+```text
 Desktop\Antigravity-Cleaner.log
 ```
 
@@ -148,35 +168,47 @@ If you want a different path, edit the `$LogFile` value in the core script.
 
 ---
 
-## Typical workflow (clean reinstall)
+## Recommended clean‑reinstall workflow
 
-1. Run Deep Clean:
+1. **Dry Run** (preview targets):
+
+```powershell
+.\Antigravity-Cleaner.ps1 -DryRunOnly
+```
+
+2. **Deep Clean**:
 
 ```powershell
 .\Antigravity-Cleaner.ps1 -AutoDeepClean
 ```
 
-2. Restart Windows.
+3. Restart Windows.
 
-3. Reinstall Antigravity IDE normally.
+4. Reinstall Antigravity IDE normally.
+
+5. If Gmail/login errors persist:
+
+```powershell
+.\Antigravity-Cleaner.ps1 -NetResetOnly
+```
+
+Restart again.
 
 ---
 
 ## Troubleshooting
 
-### 1) “ExecutionPolicy” / script blocked
+### 1) ExecutionPolicy / script blocked
 
-Run:
+Run once per session:
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
 ```
 
-Then retry.
+### 2) No uninstall entries found
 
-### 2) “No uninstall entries found”
-
-This usually means Antigravity is already removed from registry. The script will still cleanup leftovers.
+Registry uninstall key is already gone. The script will still remove leftovers.
 
 ### 3) Login still fails after clean
 
@@ -188,7 +220,7 @@ Run network reset:
 
 Restart afterward.
 
-### 4) I want to confirm nothing is left
+### 4) Confirming a fully clean state
 
 Run deep scan:
 
@@ -196,15 +228,16 @@ Run deep scan:
 .\Antigravity-Cleaner.ps1 -ScanDeep
 ```
 
-If it reports `none`, you are clean.
+If it reports `none`, your system is clean.
 
 ---
 
 ## Safety notes
 
 * The script only targets folders/keys that clearly match **Antigravity** patterns.
-* Dry Run is provided for verification.
+* **Dry Run** is the safest first step.
 * Run as Admin for full coverage.
+* Unrelated Chrome/Google data is not removed.
 
 ---
 
@@ -215,19 +248,19 @@ PRs and improvements are welcome.
 * Keep changes Windows‑safe
 * Avoid deleting unrelated Google/Chrome data
 * Add new leftover paths only when verified
+* Keep CLI flags backward compatible when possible
 
 ---
 
 ## License
 
-Choose your license (MIT recommended) and add a `LICENSE` file.
+MIT is recommended. Add your license text as `LICENSE`.
 
 ---
 
 ## Author
 
 **TawanaNetworkLtc**
-
 Ethical AI & Data Transparency Research Hub
 
 ---

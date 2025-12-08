@@ -5,7 +5,6 @@ A Windows PowerShell command‑line tool to **fully uninstall Google Antigravity
 > **Maintained by TawanaNetworkLtc**
 
 ---
-<img width="703" height="481" alt="{537C0E7D-0340-4198-8092-1338181B44FA}" src="https://github.com/user-attachments/assets/a1aca41e-7e8b-4ad0-972b-f0564d2f11d4" />
 
 ## What this tool does
 

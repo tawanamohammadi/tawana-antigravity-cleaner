@@ -6,6 +6,9 @@ echo ==================================================
 echo       Antigravity Cleaner - Windows Launcher
 echo ==================================================
 echo.
+:: Ensure we are in the script's directory
+cd /d "%~dp0"
+
 
 :: Check for Python
 python --version >nul 2>&1
@@ -19,7 +22,8 @@ IF %ERRORLEVEL% NEQ 0 (
 :: install requirements
 if exist "src\requirements.txt" (
     echo Checking dependencies...
-    pip install -r src\requirements.txt >nul 2>&1
+    python -m pip install --user -r src\requirements.txt
+
 )
 
 :: Run script

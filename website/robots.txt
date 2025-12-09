@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tawanamohammadi.github.io/tawana-antigravity-cleaner/sitemap.xml

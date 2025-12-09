@@ -1,261 +1,110 @@
-# Tawana Antigravity Cleaner (CLI)
+# Tawana Antigravity Cleaner v2.0 🌍
+### The Ultimate Cross-Platform Cleaning Tool | ابزار پاک‌سازی نهایی کراس‌پلتفرم
 
-A Windows PowerShell command‑line tool to **fully uninstall Google Antigravity IDE** and remove leftover files/caches for a clean reinstall.
+[![Python](https://img.shields.io/badge/Made%20with-Python-blue?style=for-the-badge&logo=python)](https://python.org)
+[![OS](https://img.shields.io/badge/Platform-Win%20|%20Mac%20|%20Linux-lightgrey?style=for-the-badge)](https://github.com/tawanamohammadi/tawana-antigravity-cleaner)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
 
-> **Maintained by TawanaNetworkLtc**
-
----
-
-## What this tool does
-
-* Detects Antigravity uninstall entries (per‑user + system)
-* Runs the vendor uninstaller when available
-* Deletes leftover folders in AppData/Programs/Temp
-* Optional **Deep Clean** to remove extra related caches
-* Optional **Network Reset** (useful if login/network errors persist)
-* Creates a timestamped log file on your Desktop
+> **Maintained by TawanaNetworkLtc** - Ethical AI & Data Transparency Research Hub
 
 ---
 
-## Requirements
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=00BFFF&height=300&section=header&text=Antigravity%20Cleaner&fontSize=90&animation=fadeIn&fontAlignY=38&desc=Fix%20Install%20Errors%20&%20Network%20Issues&descAlignY=51&descAlign=62" alt="Antigravity Header" />
+</div>
 
-* Windows 10 / Windows 11
-* PowerShell 5.1+ (built‑in) or PowerShell 7+ (recommended)
-* **Run as Administrator** for best results
+## 🖥️ Terminal Screenshot (نمای برنامه)
 
----
-
-## Files in this repo
-
-```text
-/antigravity-cleaner
-  Antigravity-Cleaner.ps1        # Core CLI cleaner (run this)
-  Antigravity-Cleaner-GUI.ps1    # Optional GUI wrapper (future)
-  README.md
-  LICENSE
-```
-
-CLI‑only users just need:
-
-* `Antigravity-Cleaner.ps1`
-
----
-
-## Quick start
-
-### Option A — One‑liner (download & run latest)
-
-No manual download needed. This runs the latest core script directly from GitHub:
-
-```powershell
-iwr -useb https://raw.githubusercontent.com/tawanamohammadi/tawana-antigravity-cleaner/main/Antigravity-Cleaner.ps1 | iex
-```
-
-After that, run any command (examples below), or just follow on‑screen prompts if your core script shows a menu.
-
----
-
-### Option B — Download ZIP / clone
-
-1. Download or clone this repo.
-2. Put `Antigravity-Cleaner.ps1` somewhere like `C:\tools\`.
-3. Open PowerShell **as Administrator**.
-4. Run one of the commands below.
-
----
-
-## How to run (local)
-
-### Step 1 — Open Admin PowerShell
-
-Start Menu → search **PowerShell** → **Run as Administrator**
-
-### Step 2 — Go to the folder
-
-```powershell
-cd C:\tools
-```
-
-### Step 3 — (Optional) allow running for this session
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
+```console
++-------------------------------------------------------------+
+|               ANTIGRAVITY CLEANER v2.0.0                    |
+|        Running on Windows 10 | Python 3.12.0                |
++-------------------------------------------------------------+
+| Options:                                                    |
+|  [1] Quick Clean  (Standard Paths)                          |
+|  [2] Deep Clean   (Registry + Temp + Cache + Extensions)    |
+|  [3] Network Fix  (DNS Flush + Winsock Reset)               |
+|  [4] Full Repair  (Deep Clean + Network Fix)                |
+|  [0] Exit                                                   |
++-------------------------------------------------------------+
+| Status:                                                     |
+|  > Scanning processes... [OK] 0 found                       |
+|  > Checking Registry...  [OK] 1 uninstaller found           |
+|  > Cleaning files...     [..] C:\Users\Tawana\AppData...    |
++-------------------------------------------------------------+
 ```
 
 ---
 
-## Commands
+## 🇺🇸 English Guide
 
-> All commands below assume you are in the folder containing the script.
+**Tawana Antigravity Cleaner** is a comprehensive utility designed to fully uninstall the "Antigravity" IDE ecosystem and remove deep-rooted leftover files, caches, and configuration glitches. Now rewritten in Python for a beautiful, modern experience on **Windows, macOS, and Linux**.
 
-### 1) Scan (Quick)
+### 🚀 One-Line Install & Run
+You don't need to manually download zip files. Just copy and paste the command for your OS:
 
-Checks uninstall registry entries and common leftover locations.
-
+#### 🪟 Windows (Powershell)
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -ScanQuick
+iwr -useb https://raw.githubusercontent.com/tawanamohammadi/tawana-antigravity-cleaner/main/install.ps1 | iex
 ```
 
-### 2) Scan (Deep)
-
-Quick scan + extra traces (related caches, extension icons, etc.).
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -ScanDeep
+#### 🍎 macOS / 🐧 Linux (Terminal)
+```bash
+curl -sL https://raw.githubusercontent.com/tawanamohammadi/tawana-antigravity-cleaner/main/install.sh | bash
 ```
 
-### 3) Clean Only
-
-Runs uninstall (if found) + removes main leftovers.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -CleanOnly
-```
-
-### 4) Deep Clean (Recommended)
-
-Full clean + extra caches/traces.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -AutoDeepClean
-```
-
-### 5) Dry Run
-
-Shows what would be removed **without deleting anything**.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -DryRunOnly
-```
-
-### 6) Network Reset
-
-Runs Windows network reset commands. **Restart recommended afterwards.**
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -NetResetOnly
-```
-
-### 7) One‑shot full repair
-
-Deep Clean + Network Reset (run sequentially).
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -AutoDeepClean
-powershell -ExecutionPolicy Bypass -File .\Antigravity-Cleaner.ps1 -NetResetOnly
-```
+### ✨ Key Features
+- **Deep Clean Logic**: Removes traces from AppData, Temp, Registry, and even **Chrome Extensions** linked to Antigravity.
+- **Network Reset**: automatically executes `netsh` and `flushdns` commands to fix "Network Error" or "Region Locked" login issues.
+- **Process Killer**: Auto-terminates stuck background processes before cleaning.
+- **Region Check**: Useful for ensuring your Google account is in the correct region.
 
 ---
 
-## Output & logs
+## 🇮🇷 راهنمای فارسی (Persian)
 
-* The tool prints progress to the console.
-* A log file is created on your Desktop:
+**تانا آنتی‌گرویتی کلینر (Tawana Antigravity Cleaner)**
+کامل‌ترین ابزار برای حذف، تعمیر و رفع مشکلات نصب "Antigravity IDE". اگر با خطاهای نصب، شبکه یا لاگین مواجه هستید، این ابزار با پاک‌سازی عمیق (Deep Clean) تمام فایل‌های مخفی و ریست کردن تنظیمات شبکه، مشکل شما را حل می‌کند.
 
-```text
-Desktop\Antigravity-Cleaner.log
-```
+### 🚀 نصب و اجرا با یک خط دستور
+بجای دانلود فایل‌ها، کد زیر را در ترمینال کپی کنید تا برنامه خودکار دانلود و اجرا شود:
 
-If you want a different path, edit the `$LogFile` value in the core script.
-
----
-
-## Typical workflow (clean reinstall)
-
-1. Run Dry Run (optional, safe preview):
-
+#### 🪟 ویندوز (در PowerShell)
 ```powershell
-.\Antigravity-Cleaner.ps1 -DryRunOnly
+iwr -useb https://raw.githubusercontent.com/tawanamohammadi/tawana-antigravity-cleaner/main/install.ps1 | iex
 ```
 
-2. Run Deep Clean:
-
-```powershell
-.\Antigravity-Cleaner.ps1 -AutoDeepClean
+#### 🍎 مک / 🐧 لینوکس (در Terminal)
+```bash
+curl -sL https://raw.githubusercontent.com/tawanamohammadi/tawana-antigravity-cleaner/main/install.sh | bash
 ```
 
-3. Restart Windows.
-
-4. Reinstall Antigravity IDE normally.
-
-5. If login is still broken, run Network Reset:
-
-```powershell
-.\Antigravity-Cleaner.ps1 -NetResetOnly
-```
-
-Restart again.
+### 🔗 لینک‌های مفید (Useful Links)
+- **بررسی ریجن گوگل (Google Region Check)**:
+  اگر مشکل "Not Available in your region" دارید، از لینک زیر برای بررسی و تغییر کشور اکانت گوگل خود استفاده کنید:
+  [Google Country Association Form](https://policies.google.com/country-association-form)
 
 ---
 
-## Troubleshooting
-
-### 1) “ExecutionPolicy” / script blocked
-
-Run:
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-```
-
-Then retry.
-
-### 2) “No uninstall entries found”
-
-This usually means Antigravity is already removed from registry. The script will still cleanup leftovers.
-
-### 3) Login still fails after clean
-
-Run network reset:
-
-```powershell
-.\Antigravity-Cleaner.ps1 -NetResetOnly
-```
-
-Restart afterward.
-
-### 4) I want to confirm nothing is left
-
-Run deep scan:
-
-```powershell
-.\Antigravity-Cleaner.ps1 -ScanDeep
-```
-
-If it reports `none`, you are clean.
+## 🔍 SEO & Keywords
+<details>
+<summary>Click to view related topics</summary>
+Antigravity IDE fix, uninstall Antigravity, clean reinstall, download failed, network error, google login fix, remove antigravity leftovers, windows cleaner, macos cleaner, linux cleaner, python script, automation, tawana network, fix region lock, repair installation.
+حل مشکل نصب آنتی‌گرویتی، خطای شبکه، تغییر ریجن گوگل، پاک کردن کامل برنامه، ارور لاگین، دانلود ابزار تعمیر، اسکریپت پایتون، تاوانا نتورک.
+</details>
 
 ---
 
-## Safety notes
+## 🛠️ Manual Installation (Developers)
 
-* The script only targets folders/keys that clearly match **Antigravity** patterns.
-* Dry Run is provided for verification.
-* Run as Admin for full coverage.
-
----
-
-## Contributing
-
-PRs and improvements are welcome.
-
-* Keep changes Windows‑safe
-* Avoid deleting unrelated Google/Chrome data
-* Add new leftover paths only when verified
+1.  **Clone**: `git clone https://github.com/tawanamohammadi/tawana-antigravity-cleaner.git`
+2.  **Dependencies**: `pip install -r src/requirements.txt`
+3.  **Run**: `python src/main.py`
 
 ---
 
-## License
-
-Choose your license (MIT recommended) and add a `LICENSE` file.
-
----
-
-## Author
-
-**TawanaNetworkLtc**
-
-Ethical AI & Data Transparency Research Hub
-
----
-
-If you want a GUI later, you can add a wrapper without changing the core script.
+<div align="center">
+  <b>Developed by TawanaNetworkLtc</b><br>
+  <i>Empowering Users with Open Source Tools</i>
+</div>

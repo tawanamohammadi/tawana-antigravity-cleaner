@@ -4,6 +4,9 @@ echo "=================================================="
 echo "      Antigravity Cleaner - Mac/Linux Launcher"
 echo "=================================================="
 echo ""
+# Ensure we are in the script's directory
+cd "$(dirname "$0")"
+
 
 # Check for Python
 if ! command -v python3 &> /dev/null; then

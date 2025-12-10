@@ -5,7 +5,20 @@ import shutil
 import subprocess
 import time
 import glob
+import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
+
+# Import new modules
+try:
+    from browser_helper import BrowserHelper
+    from network_optimizer import NetworkOptimizer
+    from session_manager import SessionManager
+except ImportError as e:
+    # Modules not yet available, will be created
+    BrowserHelper = None
+    NetworkOptimizer = None
+    SessionManager = None
 
 # Try imports for runtime (UI and Process handling)
 try:
@@ -322,10 +335,256 @@ class Cleaner:
         self.network_reset()
 
 
+# --- Agent Logging Setup ---
+
+def setup_agent_logging():
+    """Setup detailed logging for agent operations"""
+    log_dir = os.path.join(os.path.dirname(__file__), '..', '.agent', 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    
+    log_file = os.path.join(log_dir, 'browser-helper-operations.log')
+    
+    logger = logging.getLogger('antigravity_agent')
+    logger.setLevel(logging.DEBUG)
+    
+    # Rotating file handler (10MB max, keep 3 backups)
+    handler = RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=3)
+    handler.setFormatter(logging.Formatter(
+        '[%(asctime)s] [%(levelname)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    ))
+    
+    logger.addHandler(handler)
+    return logger
+
+
+# --- Browser Login Helper Submenu ---
+
+def browser_login_helper_menu(browser_helper, network_optimizer, logger):
+    """Browser Login Helper submenu"""
+    while True:
+        console.print("\n" + "="*70)
+        console.print("[bold cyan]BROWSER LOGIN HELPER | کمک‌کننده ورود[/bold cyan]")
+        console.print("="*70)
+        console.print("\n1. [green]Clean Antigravity Browser Traces (Safe)[/green]")
+        console.print("   [dim]پاک‌سازی ردهای Antigravity در مرورگر (ایمن)[/dim]")
+        console.print("\n2. [yellow]Optimize Network for Login[/yellow]")
+        console.print("   [dim]بهینه‌سازی شبکه برای ورود[/dim]")
+        console.print("\n3. [magenta]Network Diagnostic Report[/magenta]")
+        console.print("   [dim]گزارش تشخیصی شبکه[/dim]")
+        console.print("\n4. [cyan]Run Full Login Repair (1+2)[/cyan]")
+        console.print("   [dim]اجرای تعمیر کامل ورود[/dim]")
+        console.print("\n0. [dim]Back to Main Menu[/dim]")
+        
+        choice = Prompt.ask("\nEnter choice", choices=["0", "1", "2", "3", "4"], default="0")
+        
+        if choice == "0":
+            break
+        elif choice == "1":
+            # Clean browser traces
+            browsers = browser_helper.detect_installed_browsers()
+            if not browsers:
+                console.print("[red]No supported browsers found.[/red]")
+                continue
+            
+            console.print(f"\n[cyan]Found browsers: {', '.join(browsers)}[/cyan]")
+            browser = Prompt.ask("Select browser to clean", choices=browsers + ["all"], default="all")
+            
+            if browser == "all":
+                for b in browsers:
+                    stats = browser_helper.clean_browser_completely(b)
+                    console.print(f"\n[green]✓ {b}: {stats['cookies']} cookies, {stats['cache']} cache items cleaned[/green]")
+            else:
+                stats = browser_helper.clean_browser_completely(browser)
+                console.print(f"\n[green]✓ Cleaned {stats['cookies']} cookies, {stats['cache']} cache items[/green]")
+        
+        elif choice == "2":
+            # Optimize network
+            console.print("\n[cyan]Optimizing network settings...[/cyan]")
+            network_optimizer.clear_dns_cache()
+            if IS_WINDOWS:
+                if Confirm.ask("Reset network stack? (Requires restart)"):
+                    network_optimizer.reset_network_stack()
+            console.print("[green]✓ Network optimization complete[/green]")
+        
+        elif choice == "3":
+            # Diagnostic report
+            console.print("\n[cyan]Generating diagnostic report...[/cyan]")
+            report = network_optimizer.generate_diagnostic_report()
+            console.print("\n" + report)
+            
+            # Save to file
+            report_file = os.path.join(os.path.expanduser("~"), "Desktop", "Antigravity-Network-Diagnostic.txt")
+            with open(report_file, 'w', encoding='utf-8') as f:
+                f.write(report)
+            console.print(f"\n[green]✓ Report saved to: {report_file}[/green]")
+        
+        elif choice == "4":
+            # Full repair
+            console.print("\n[cyan]Running full login repair...[/cyan]")
+            
+            # Clean browsers
+            browsers = browser_helper.detect_installed_browsers()
+            for b in browsers:
+                stats = browser_helper.clean_browser_completely(b)
+                console.print(f"[green]✓ {b}: {stats['cookies']} cookies cleaned[/green]")
+            
+            # Optimize network
+            network_optimizer.clear_dns_cache()
+            console.print("[green]✓ DNS cache cleared[/green]")
+            
+            # Diagnostic
+            console.print("\n[cyan]Running diagnostics...[/cyan]")
+            connectivity = network_optimizer.test_google_connectivity()
+            console.print(f"[green]✓ Google connectivity: {connectivity['overall_status']}[/green]")
+            
+            console.print("\n[bold green]✓ Full login repair complete![/bold green]")
+        
+        if choice != "0":
+            if not Confirm.ask("\nContinue in Browser Helper?"):
+                break
+
+
+# --- Session Manager Submenu ---
+
+def session_manager_menu(session_manager, browser_helper, logger):
+    """Session Manager submenu"""
+    while True:
+        console.print("\n" + "="*70)
+        console.print("[bold green]SESSION MANAGER | مدیریت نشست‌ها[/bold green]")
+        console.print("="*70)
+        console.print("\n1. [cyan]Backup Current Session[/cyan]")
+        console.print("   [dim]پشتیبان‌گیری از Session فعلی[/dim]")
+        console.print("\n2. [yellow]Restore Saved Session[/yellow]")
+        console.print("   [dim]بازیابی Session ذخیره‌شده[/dim]")
+        console.print("\n3. [magenta]List All Saved Sessions[/magenta]")
+        console.print("   [dim]لیست تمام Session های ذخیره‌شده[/dim]")
+        console.print("\n4. [red]Delete Old Sessions[/red]")
+        console.print("   [dim]حذف Session های قدیمی[/dim]")
+        console.print("\n0. [dim]Back to Main Menu[/dim]")
+        
+        choice = Prompt.ask("\nEnter choice", choices=["0", "1", "2", "3", "4"], default="0")
+        
+        if choice == "0":
+            break
+        elif choice == "1":
+            # Backup session
+            browsers = browser_helper.detect_installed_browsers()
+            if not browsers:
+                console.print("[red]No supported browsers found.[/red]")
+                continue
+            
+            console.print(f"\n[cyan]Found browsers: {', '.join(browsers)}[/cyan]")
+            browser = Prompt.ask("Select browser", choices=browsers)
+            
+            profiles = browser_helper.get_browser_profiles(browser)
+            if not profiles:
+                console.print("[red]No profiles found.[/red]")
+                continue
+            
+            profile_names = [p[0] for p in profiles]
+            profile_name = Prompt.ask("Select profile", choices=profile_names, default=profile_names[0])
+            profile_path = next(p[1] for p in profiles if p[0] == profile_name)
+            
+            session_name = Prompt.ask("Session name (optional)", default="")
+            if not session_name:
+                session_name = None
+            
+            if session_manager.backup_session(browser, profile_path, session_name):
+                console.print("[green]✓ Session backed up successfully![/green]")
+            else:
+                console.print("[red]✗ Session backup failed.[/red]")
+        
+        elif choice == "2":
+            # Restore session
+            sessions = session_manager.list_saved_sessions()
+            if not sessions:
+                console.print("[red]No saved sessions found.[/red]")
+                continue
+            
+            console.print("\n[cyan]Saved sessions:[/cyan]")
+            for i, s in enumerate(sessions, 1):
+                status = "[red](expired)[/red]" if s.get('expired') else "[green](valid)[/green]"
+                console.print(f"{i}. {s['name']} - {s['browser']} - {s['cookie_count']} cookies {status}")
+            
+            session_idx = int(Prompt.ask("Select session number", choices=[str(i) for i in range(1, len(sessions)+1)]))
+            selected_session = sessions[session_idx - 1]
+            
+            # Get browser and profile
+            browsers = browser_helper.detect_installed_browsers()
+            browser = Prompt.ask("Select browser", choices=browsers, default=selected_session['browser'])
+            
+            profiles = browser_helper.get_browser_profiles(browser)
+            profile_names = [p[0] for p in profiles]
+            profile_name = Prompt.ask("Select profile", choices=profile_names, default=profile_names[0])
+            profile_path = next(p[1] for p in profiles if p[0] == profile_name)
+            
+            if session_manager.restore_session(selected_session['name'], browser, profile_path):
+                console.print("[green]✓ Session restored successfully![/green]")
+            else:
+                console.print("[red]✗ Session restore failed.[/red]")
+        
+        elif choice == "3":
+            # List sessions
+            sessions = session_manager.list_saved_sessions()
+            if not sessions:
+                console.print("[yellow]No saved sessions found.[/yellow]")
+                continue
+            
+            table = Table(title="Saved Sessions")
+            table.add_column("Name", style="cyan")
+            table.add_column("Browser", style="magenta")
+            table.add_column("Backup Time", style="yellow")
+            table.add_column("Cookies", justify="right", style="green")
+            table.add_column("Status", style="white")
+            
+            for s in sessions:
+                status = "[red]Expired[/red]" if s.get('expired') else "[green]Valid[/green]"
+                table.add_row(
+                    s['name'],
+                    s['browser'],
+                    s['backup_time'],
+                    str(s['cookie_count']),
+                    status
+                )
+            
+            console.print(table)
+        
+        elif choice == "4":
+            # Delete old sessions
+            if Confirm.ask("Delete all expired sessions?"):
+                count = session_manager.delete_expired_sessions()
+                console.print(f"[green]✓ Deleted {count} expired sessions[/green]")
+        
+        if choice != "0":
+            if not Confirm.ask("\nContinue in Session Manager?"):
+                break
+
+
 # --- CLI Menu ---
 
 def main():
+    # Setup logging
+    agent_logger = setup_agent_logging()
+    agent_logger.info("=== Antigravity Cleaner Started ===")
+    
     cleaner = Cleaner()
+    
+    # Initialize new helpers (if modules available)
+    browser_helper = None
+    network_optimizer = None
+    session_manager = None
+    
+    if BrowserHelper and NetworkOptimizer and SessionManager:
+        try:
+            browser_helper = BrowserHelper(agent_logger, dry_run=cleaner.dry_run)
+            network_optimizer = NetworkOptimizer(agent_logger, dry_run=cleaner.dry_run)
+            session_storage = os.path.join(os.path.expanduser('~'), '.antigravity-cleaner', 'sessions')
+            session_manager = SessionManager(session_storage, agent_logger, dry_run=cleaner.dry_run)
+            agent_logger.info("Browser helper modules initialized successfully")
+        except Exception as e:
+            agent_logger.error(f"Failed to initialize browser helper modules: {e}")
+            console.print(f"[yellow]Warning: Browser helper features unavailable: {e}[/yellow]")
     
     # Check args
     if len(sys.argv) > 1:
@@ -333,6 +592,13 @@ def main():
         if arg == "--dry-run":
             cleaner.dry_run = True
             console.print(Panel.fit("DRY RUN MODE ENABLED", style="bold yellow"))
+            # Update helpers dry_run mode
+            if browser_helper:
+                browser_helper.dry_run = True
+            if network_optimizer:
+                network_optimizer.dry_run = True
+            if session_manager:
+                session_manager.dry_run = True
         elif arg == "--auto":
             cleaner.run_clean(deep=True)
             cleaner.run_network_reset()
@@ -353,11 +619,25 @@ def main():
         console.print("3. [magenta]Network Reset[/magenta] (Fix connection issues)")
         console.print("4. [cyan]Full Repair[/cyan] (Deep Clean + Network Reset)")
         console.print("5. [dim]Toggle Dry Run[/dim] " + (f"(Currently: [bold red]ON[/bold red])" if cleaner.dry_run else "(Currently: OFF)"))
+        
+        # New options (if modules available)
+        if browser_helper and network_optimizer:
+            console.print("6. [blue]Browser Login Helper[/blue] (Clean browser traces)")
+        if session_manager:
+            console.print("7. [green]Session Manager[/green] (Backup/Restore sessions)")
+        
         console.print("0. Exit")
 
-        choice = Prompt.ask("Enter choice", choices=["0", "1", "2", "3", "4", "5"], default="0")
+        choices = ["0", "1", "2", "3", "4", "5"]
+        if browser_helper and network_optimizer:
+            choices.append("6")
+        if session_manager:
+            choices.append("7")
+        
+        choice = Prompt.ask("Enter choice", choices=choices, default="0")
 
         if choice == "0":
+            agent_logger.info("=== Antigravity Cleaner Exited ===")
             sys.exit(0)
         elif choice == "1":
             cleaner.run_clean(deep=False)
@@ -370,8 +650,19 @@ def main():
             cleaner.run_network_reset()
         elif choice == "5":
             cleaner.dry_run = not cleaner.dry_run
+            # Update helpers dry_run mode
+            if browser_helper:
+                browser_helper.dry_run = cleaner.dry_run
+            if network_optimizer:
+                network_optimizer.dry_run = cleaner.dry_run
+            if session_manager:
+                session_manager.dry_run = cleaner.dry_run
             status = "[bold red]ON[/bold red]" if cleaner.dry_run else "OFF"
             console.print(f"Dry Run is now {status}")
+        elif choice == "6" and browser_helper and network_optimizer:
+            browser_login_helper_menu(browser_helper, network_optimizer, agent_logger)
+        elif choice == "7" and session_manager:
+            session_manager_menu(session_manager, browser_helper, agent_logger)
 
         if choice != "5":
             if not Confirm.ask("Run another task?"):

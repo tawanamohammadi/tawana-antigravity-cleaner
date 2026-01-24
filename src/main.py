@@ -6,6 +6,7 @@ import subprocess
 import time
 import glob
 import logging
+import re
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
@@ -165,11 +166,25 @@ class Cleaner:
 
         elif IS_MAC:
             paths.extend([
+                # Application
+                "/Applications/Antigravity.app",
+                # Application Support
                 os.path.join(home, "Library", "Application Support", "Antigravity"),
+                # Recent Documents (shared file list)
+                os.path.join(home, "Library", "Application Support", "com.apple.sharedfilelist",
+                             "com.apple.LSSharedFileList.ApplicationRecentDocuments", "com.google.antigravity.sfl3"),
+                # Caches
                 os.path.join(home, "Library", "Caches", "Antigravity"),
-                os.path.join(home, "Library", "Preferences", "com.antigravity.plist"), # Hypothetical
+                os.path.join(home, "Library", "Caches", "com.google.antigravity"),
+                os.path.join(home, "Library", "Caches", "com.google.antigravity.ShipIt"),
+                # HTTP Storages
+                os.path.join(home, "Library", "HTTPStorages", "com.google.antigravity"),
+                # Preferences
+                os.path.join(home, "Library", "Preferences", "com.google.antigravity.plist"),
+                os.path.join(home, "Library", "Preferences", "ByHost", "com.google.antigravity.ShipIt.*.plist"),
+                # Saved Application State
                 os.path.join(home, "Library", "Saved Application State", "com.antigravity.savedState"),
-                "/Applications/Antigravity.app"
+                os.path.join(home, "Library", "Saved Application State", "com.google.antigravity.savedState"),
             ])
 
         elif IS_LINUX:
@@ -291,6 +306,352 @@ class Cleaner:
                     self.log(f"Error running {cmd}: {e}", style="red")
             self.log("Network reset complete. Restart recommended.", style="green")
 
+    # --- Shell Config Cleanup ---
+
+    def get_shell_config_files(self):
+        """Return list of shell config files to scan for Antigravity entries."""
+        home = os.path.expanduser("~")
+        config_files = []
+
+        if IS_WINDOWS:
+            # Windows PowerShell profile locations
+            documents = os.path.join(home, "Documents")
+            config_files.extend([
+                # Windows PowerShell (5.1)
+                os.path.join(documents, "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1"),
+                os.path.join(documents, "WindowsPowerShell", "profile.ps1"),
+                # PowerShell Core (7+)
+                os.path.join(documents, "PowerShell", "Microsoft.PowerShell_profile.ps1"),
+                os.path.join(documents, "PowerShell", "profile.ps1"),
+                # All Users profiles (may need admin)
+                os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"),
+                            "PowerShell", "7", "profile.ps1"),
+                os.path.join(os.environ.get("SystemRoot", "C:\\Windows"),
+                            "System32", "WindowsPowerShell", "v1.0", "profile.ps1"),
+                # Git Bash on Windows (if installed)
+                os.path.join(home, ".bashrc"),
+                os.path.join(home, ".bash_profile"),
+            ])
+        else:
+            # Unix-like systems (macOS and Linux)
+            config_files.extend([
+                os.path.join(home, ".profile"),
+                os.path.join(home, ".bash_profile"),
+                os.path.join(home, ".bashrc"),
+                os.path.join(home, ".zshrc"),
+                os.path.join(home, ".zprofile"),
+                os.path.join(home, ".zshenv"),
+            ])
+
+            if IS_MAC:
+                # macOS-specific locations
+                config_files.extend([
+                    os.path.join(home, ".zlogin"),
+                    os.path.join(home, ".bash_login"),
+                ])
+            elif IS_LINUX:
+                # Linux-specific locations
+                config_files.extend([
+                    os.path.join(home, ".bash_login"),
+                    "/etc/profile.d/antigravity.sh",  # System-wide (may need sudo)
+                ])
+
+        # Return only files that exist
+        return [f for f in config_files if os.path.isfile(f)]
+
+    def scan_shell_configs(self):
+        """Scan shell config files for Antigravity-related entries."""
+        config_files = self.get_shell_config_files()
+
+        # Common patterns (work across all shells)
+        patterns = [
+            re.compile(r'.*antigravity.*', re.IGNORECASE),
+            re.compile(r'.*ANTIGRAVITY.*'),
+        ]
+
+        # Unix shell patterns (bash/zsh)
+        unix_patterns = [
+            re.compile(r'export\s+PATH=.*[Aa]ntigravity.*'),
+            re.compile(r'alias\s+\w*antigravity\w*=.*', re.IGNORECASE),
+            re.compile(r'source.*antigravity.*', re.IGNORECASE),
+            re.compile(r'\.\s+.*antigravity.*', re.IGNORECASE),  # . /path/to/antigravity
+            re.compile(r'eval.*antigravity.*', re.IGNORECASE),
+        ]
+
+        # PowerShell patterns
+        powershell_patterns = [
+            re.compile(r'\$env:PATH.*antigravity.*', re.IGNORECASE),
+            re.compile(r'Set-Alias.*antigravity.*', re.IGNORECASE),
+            re.compile(r'New-Alias.*antigravity.*', re.IGNORECASE),
+            re.compile(r'Import-Module.*antigravity.*', re.IGNORECASE),
+            re.compile(r'\.\s+.*antigravity.*\.ps1', re.IGNORECASE),  # Dot-sourcing .ps1
+            re.compile(r'Add-PathVariable.*antigravity.*', re.IGNORECASE),
+            re.compile(r'\[Environment\]::SetEnvironmentVariable.*antigravity.*', re.IGNORECASE),
+        ]
+
+        found_entries = []
+
+        for config_file in config_files:
+            try:
+                with open(config_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = f.readlines()
+
+                # Determine which patterns to use based on file type
+                is_powershell = config_file.endswith('.ps1')
+                if is_powershell:
+                    active_patterns = patterns + powershell_patterns
+                    comment_char = '#'
+                else:
+                    active_patterns = patterns + unix_patterns
+                    comment_char = '#'
+
+                for line_num, line in enumerate(lines, 1):
+                    # Skip comments that just mention antigravity
+                    stripped = line.strip()
+                    if stripped.startswith(comment_char):
+                        # Only flag comments if they look like commented-out code
+                        if not any(p.match(stripped[1:].strip()) for p in active_patterns):
+                            continue
+
+                    for pattern in active_patterns:
+                        if pattern.match(line):
+                            found_entries.append({
+                                'file': config_file,
+                                'line_num': line_num,
+                                'content': line.rstrip('\n'),
+                                'pattern': pattern.pattern
+                            })
+                            break  # Don't match same line multiple times
+
+            except (IOError, OSError) as e:
+                self.log(f"Could not read {config_file}: {e}", style="yellow")
+
+        return found_entries
+
+    def clean_shell_configs(self, entries_to_remove):
+        """Remove Antigravity entries from shell config files after backing up."""
+        if not entries_to_remove:
+            self.log("No shell config entries to clean.", style="dim")
+            return
+
+        # Group entries by file
+        files_to_clean = {}
+        for entry in entries_to_remove:
+            file_path = entry['file']
+            if file_path not in files_to_clean:
+                files_to_clean[file_path] = []
+            files_to_clean[file_path].append(entry['line_num'])
+
+        backup_dir = os.path.join(os.path.expanduser("~"), ".antigravity-cleaner", "backups", "shell-configs")
+        os.makedirs(backup_dir, exist_ok=True)
+
+        for file_path, line_numbers in files_to_clean.items():
+            if self.dry_run:
+                self.log(f"[Dry Run] Would clean {len(line_numbers)} lines from {file_path}", style="yellow")
+                continue
+
+            try:
+                # Create backup
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_name = os.path.basename(file_path) + f".backup_{timestamp}"
+                backup_path = os.path.join(backup_dir, backup_name)
+                shutil.copy2(file_path, backup_path)
+                self.log(f"Backup created: {backup_path}", style="dim")
+
+                # Read file
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = f.readlines()
+
+                # Remove matching lines (convert to 0-indexed)
+                lines_to_remove = set(ln - 1 for ln in line_numbers)
+                new_lines = [line for i, line in enumerate(lines) if i not in lines_to_remove]
+
+                # Write back
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.writelines(new_lines)
+
+                self.log(f"Cleaned {len(line_numbers)} lines from {file_path}", style="green")
+
+            except (IOError, OSError) as e:
+                self.log(f"Error cleaning {file_path}: {e}", style="red")
+
+    def scan_windows_path_registry(self):
+        """Scan Windows Registry for Antigravity entries in PATH."""
+        if not IS_WINDOWS:
+            return []
+
+        found_entries = []
+
+        # Registry locations for PATH
+        registry_locations = [
+            (winreg.HKEY_CURRENT_USER, r"Environment", "User PATH"),
+            (winreg.HKEY_LOCAL_MACHINE,
+             r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+             "System PATH"),
+        ]
+
+        for hive, key_path, description in registry_locations:
+            try:
+                with winreg.OpenKey(hive, key_path, 0, winreg.KEY_READ) as key:
+                    try:
+                        path_value, reg_type = winreg.QueryValueEx(key, "Path")
+                        if path_value:
+                            # Split PATH into components
+                            path_parts = path_value.split(';')
+                            for i, part in enumerate(path_parts):
+                                if 'antigravity' in part.lower():
+                                    found_entries.append({
+                                        'hive': hive,
+                                        'key_path': key_path,
+                                        'description': description,
+                                        'path_index': i,
+                                        'path_value': part,
+                                        'full_path': path_value,
+                                        'reg_type': reg_type
+                                    })
+                    except FileNotFoundError:
+                        pass  # Path variable doesn't exist
+            except OSError as e:
+                self.log(f"Could not read {description}: {e}", style="yellow")
+
+        return found_entries
+
+    def clean_windows_path_registry(self, entries_to_remove):
+        """Remove Antigravity entries from Windows PATH in Registry."""
+        if not IS_WINDOWS or not entries_to_remove:
+            return
+
+        # Group by registry key
+        keys_to_clean = {}
+        for entry in entries_to_remove:
+            key_id = (entry['hive'], entry['key_path'])
+            if key_id not in keys_to_clean:
+                keys_to_clean[key_id] = {
+                    'description': entry['description'],
+                    'full_path': entry['full_path'],
+                    'reg_type': entry['reg_type'],
+                    'paths_to_remove': []
+                }
+            keys_to_clean[key_id]['paths_to_remove'].append(entry['path_value'])
+
+        # Backup file for registry changes
+        backup_dir = os.path.join(os.path.expanduser("~"), ".antigravity-cleaner", "backups", "registry")
+        os.makedirs(backup_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = os.path.join(backup_dir, f"path_backup_{timestamp}.txt")
+
+        for (hive, key_path), data in keys_to_clean.items():
+            if self.dry_run:
+                self.log(f"[Dry Run] Would remove {len(data['paths_to_remove'])} paths from {data['description']}", style="yellow")
+                continue
+
+            try:
+                # Save backup
+                with open(backup_file, 'a', encoding='utf-8') as f:
+                    hive_name = "HKCU" if hive == winreg.HKEY_CURRENT_USER else "HKLM"
+                    f.write(f"{hive_name}\\{key_path}\\Path\n")
+                    f.write(f"Original: {data['full_path']}\n\n")
+
+                # Calculate new PATH
+                current_parts = data['full_path'].split(';')
+                new_parts = [p for p in current_parts if p.lower() not in
+                            [r.lower() for r in data['paths_to_remove']]]
+                new_path = ';'.join(new_parts)
+
+                # Write to registry
+                with winreg.OpenKey(hive, key_path, 0, winreg.KEY_WRITE) as key:
+                    winreg.SetValueEx(key, "Path", 0, data['reg_type'], new_path)
+
+                self.log(f"Cleaned {len(data['paths_to_remove'])} paths from {data['description']}", style="green")
+                self.log(f"Backup saved to: {backup_file}", style="dim")
+
+            except OSError as e:
+                self.log(f"Error cleaning {data['description']}: {e}", style="red")
+                if "Access is denied" in str(e):
+                    self.log("Try running as Administrator for System PATH changes.", style="yellow")
+
+    def run_shell_config_cleanup(self):
+        """Interactive shell config cleanup (cross-platform)."""
+        found_anything = False
+
+        # --- Shell/PowerShell Config Files ---
+        self.log("Scanning shell configuration files...", style="cyan")
+
+        config_files = self.get_shell_config_files()
+        if config_files:
+            self.log(f"Found {len(config_files)} config files to scan.", style="dim")
+            shell_entries = self.scan_shell_configs()
+        else:
+            self.log("No shell config files found.", style="dim")
+            shell_entries = []
+
+        if shell_entries:
+            found_anything = True
+            self.log(f"\nFound {len(shell_entries)} Antigravity-related entries in config files:", style="yellow")
+
+            table = Table(title="Shell/PowerShell Config Entries")
+            table.add_column("File", style="cyan", no_wrap=True)
+            table.add_column("Line", justify="right", style="magenta")
+            table.add_column("Content", style="white")
+
+            for entry in shell_entries:
+                table.add_row(
+                    os.path.basename(entry['file']),
+                    str(entry['line_num']),
+                    entry['content'][:60] + "..." if len(entry['content']) > 60 else entry['content']
+                )
+
+            console.print(table)
+
+        # --- Windows Registry PATH ---
+        registry_entries = []
+        if IS_WINDOWS:
+            self.log("\nScanning Windows Registry PATH...", style="cyan")
+            registry_entries = self.scan_windows_path_registry()
+
+            if registry_entries:
+                found_anything = True
+                self.log(f"\nFound {len(registry_entries)} Antigravity paths in Registry:", style="yellow")
+
+                table = Table(title="Windows Registry PATH Entries")
+                table.add_column("Location", style="cyan")
+                table.add_column("Path Value", style="white")
+
+                for entry in registry_entries:
+                    table.add_row(
+                        entry['description'],
+                        entry['path_value'][:50] + "..." if len(entry['path_value']) > 50 else entry['path_value']
+                    )
+
+                console.print(table)
+            else:
+                self.log("No Antigravity paths found in Registry.", style="dim")
+
+        # --- No entries found ---
+        if not found_anything:
+            self.log("\nNo Antigravity-related entries found.", style="green")
+            return
+
+        # --- Dry run mode ---
+        if self.dry_run:
+            self.log("\n[Dry Run] Would remove the above entries.", style="yellow")
+            return
+
+        # --- Confirm and clean ---
+        if self.get_user_confirmation("\nRemove these entries? (Backups will be created)"):
+            if shell_entries:
+                self.clean_shell_configs(shell_entries)
+
+            if registry_entries:
+                self.clean_windows_path_registry(registry_entries)
+
+            # Platform-specific completion message
+            if IS_WINDOWS:
+                self.log("\nShell config cleanup complete. Please restart your terminal or sign out/in for PATH changes.", style="bold green")
+            else:
+                self.log("\nShell config cleanup complete. Please restart your terminal or run 'source ~/.zshrc' (or equivalent).", style="bold green")
+        else:
+            self.log("Shell config cleanup cancelled.", style="dim")
 
     # --- Main Actions ---
 
@@ -625,7 +986,13 @@ def main():
             console.print("6. [blue]Browser Login Helper[/blue] (Clean browser traces)")
         if session_manager:
             console.print("7. [green]Session Manager[/green] (Backup/Restore sessions)")
-        
+
+        # Shell config cleanup (available on all platforms)
+        if IS_WINDOWS:
+            console.print("8. [yellow]Shell Config Cleanup[/yellow] (PowerShell profiles + Registry PATH)")
+        else:
+            console.print("8. [yellow]Shell Config Cleanup[/yellow] (Clean .zshrc, .bashrc, etc.)")
+
         console.print("0. Exit")
 
         choices = ["0", "1", "2", "3", "4", "5"]
@@ -633,6 +1000,7 @@ def main():
             choices.append("6")
         if session_manager:
             choices.append("7")
+        choices.append("8")  # Shell config cleanup available on all platforms
         
         choice = Prompt.ask("Enter choice", choices=choices, default="0")
 
@@ -663,6 +1031,8 @@ def main():
             browser_login_helper_menu(browser_helper, network_optimizer, agent_logger)
         elif choice == "7" and session_manager:
             session_manager_menu(session_manager, browser_helper, agent_logger)
+        elif choice == "8":
+            cleaner.run_shell_config_cleanup()
 
         if choice != "5":
             if not Confirm.ask("Run another task?"):
